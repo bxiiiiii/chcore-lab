@@ -135,13 +135,15 @@ static int printk_write_num(char **out, long long i, int base, int sign,
 		}
 	}
 	if(base == 8) {
+		char arr[] = "012345678";
 		while(u) {
-			tem = tem * 10 + u % 8;
-			u /= 8; 
+			print_buf[num++] = arr[u % 8];
+			u /= 8;
 		}
-		while(tem) {
-			print_buf[--num] = tem % 10;
-			tem /= 10;
+		for (int ls = 0, rs = num-1; ls <= rs; ++ls, --rs) {
+			char tem = print_buf[ls];
+			print_buf[ls] = print_buf[rs];
+			print_buf[rs] = tem;
 		}
 		print_buf[num] = '\0';
 	}
@@ -166,6 +168,7 @@ static int printk_write_num(char **out, long long i, int base, int sign,
 		}
 		print_buf[num] = '\0';
 	}
+	s = &print_buf;
 
 	if (neg) {
 		if (width && (flags & PAD_ZERO)) {
