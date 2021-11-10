@@ -36,7 +36,7 @@ void init_buddy(struct phys_mem_pool *pool, struct page *start_page,
 	/* Init the page_metadata area. */
 	for (page_idx = 0; page_idx < page_num; ++page_idx) {
 		page = start_page + page_idx;
-		page->allocated = 1;
+		page->allocated = 1; 
 		page->order = 0;
 	}
 
@@ -91,6 +91,26 @@ static struct page *split_page(struct phys_mem_pool *pool, u64 order,
 {
 	// <lab2>
 	struct page *split_page = NULL;
+	
+	if(page->allocated) {
+		split_page = page;
+		list_del(&(split_page->node));
+		pool->free_lists[split_page->order].nr_free--;
+
+		while(split_page->order > order) {
+			split_page->order--;
+			struct page* buddy_page = get_buddy_chunk(pool, split_page);
+
+			if(buddy_page != NULL) {
+				buddy_page->allocated = 0;
+				buddy_page->order = split_page->order;
+
+				list_add(&(buddy_page->node), &(pool->free_lists[buddy_page->order].free_list));
+				pool->free_lists[buddy_page->order].nr_free++;
+			}	
+		}
+	}
+
 	return split_page;
 	// </lab2>
 }
@@ -107,7 +127,12 @@ struct page *buddy_get_pages(struct phys_mem_pool *pool, u64 order)
 {
 	// <lab2>
 	struct page *page = NULL;
-
+	/*if(pool->free_lists[order].nr_free >= (1 << order)) {
+		page->allocated = 1;
+		page->order = order;
+		page->node = pool->free_lists[order].free_list
+	}*/
+	
 	return page;
 	// </lab2>
 }
