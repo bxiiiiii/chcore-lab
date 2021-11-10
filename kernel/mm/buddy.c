@@ -91,7 +91,7 @@ static struct page *split_page(struct phys_mem_pool *pool, u64 order,
 {
 	// <lab2>
 	struct page *split_page = NULL;
-	
+
 	if(page->allocated) {
 		split_page = page;
 		list_del(&(split_page->node));
@@ -151,6 +151,28 @@ static struct page *merge_page(struct phys_mem_pool *pool, struct page *page)
 	// <lab2>
 
 	struct page *merge_page = NULL;
+
+	if(page->allocated == 0) {
+		merge_page = page;
+		list_del(&merge_page->node);
+		pool->free_lists[merge_page->order].nr_free--;
+
+		while(1) {
+			struct page *buddy_page = get_buddy_chunk(pool, merge_page);
+
+			if(buddy_page != NULL && buddy_page->allocated == 0) {
+				list_del(&buddy_page->node);
+				pool->free_lists[buddy_page->order].nr_free--;
+
+				++merge_page->order;
+				++buddy_page->order;
+				buddy_page->allocated = 1;
+			} else 
+				break;
+		}
+	}
+	
+	list_append(&merge_page->order);
 	return merge_page;
 	// </lab2>
 }
