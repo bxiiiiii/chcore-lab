@@ -126,13 +126,19 @@ static struct page *split_page(struct phys_mem_pool *pool, u64 order,
 struct page *buddy_get_pages(struct phys_mem_pool *pool, u64 order)
 {
 	// <lab2>
+	int oorder = order;
 	struct page *page = NULL;
-	/*if(pool->free_lists[order].nr_free >= (1 << order)) {
-		page->allocated = 1;
-		page->order = order;
-		page->node = pool->free_lists[order].free_list
-	}*/
-	
+	if(pool->free_lists[order].nr_free >= order) {
+		page = list_entry(pool->free_lists[order].free_list.next, struct page, node);
+	} else {
+		while(pool->free_lists[oorder].nr_free <= 0 && oorder <= BUDDY_MAX_ORDER) 
+			oorder++;
+
+		page = list_entry(pool->free_lists[oorder].free_list.next, struct page, node);
+		split_page(pool, oorder, page);
+	}
+
+	page->allocated = 1;
 	return page;
 	// </lab2>
 }
@@ -172,7 +178,7 @@ static struct page *merge_page(struct phys_mem_pool *pool, struct page *page)
 		}
 	}
 	
-	list_append(&merge_page->order);
+	list_append(&merge_page->node, &pool->free_lists[merge_page->order].free_list);
 	return merge_page;
 	// </lab2>
 }
@@ -187,7 +193,11 @@ static struct page *merge_page(struct phys_mem_pool *pool, struct page *page)
 void buddy_free_pages(struct phys_mem_pool *pool, struct page *page)
 {
 	// <lab2>
+	page->allocated = 0;
+	list_add(&page->node, &pool->free_lists[page->order].free_list);
+	pool->free_lists[page->order].nr_free++;
 
+	merge_page(pool, page);
 	// </lab2>
 }
 
