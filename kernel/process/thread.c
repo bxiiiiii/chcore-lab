@@ -164,7 +164,9 @@ static u64 load_binary(struct process *process,
 
 			p_vaddr = elf->p_headers[i].p_vaddr;
 			seg_sz = elf->p_headers[i].p_memsz;
-			seg_map_sz = elf->p_headers[i].p_align;
+			u64 start_page = ROUND_DOWN(p_vaddr, PAGE_SIZE);
+			u64 end_page = ROUND_UP(p_vaddr + seg_sz, PAGE_SIZE);
+			seg_map_sz = end_page - start_page;
 
 			pmo = obj_alloc(TYPE_PMO, sizeof(*pmo));
 			if (!pmo) {
@@ -183,7 +185,8 @@ static u64 load_binary(struct process *process,
 			 * You should copy data from the elf into the physical memory in pmo.
 			 * The physical address of a pmo can be get from pmo->start.
 			 */
-			u64 *start_pmo = phys_to_virt(pmo->start);
+			u64 start_offset = p_vaddr - start_page;
+			u64 *start_pmo = phys_to_virt(pmo->start) + start_offset;
 			u64 *start_addr = bin + elf->p_headers[i].p_offset;
 			for(u64 idx = 0; idx < elf->p_headers[i].p_filesz; idx++) 
 				start_pmo[idx] = start_pmo[idx];
