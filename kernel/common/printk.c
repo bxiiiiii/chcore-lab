@@ -123,16 +123,17 @@ static int printk_write_num(char **out, long long i, int base, int sign,
 	unsigned long long tem;
 
 	if(base == 10) {
-		tem = i;
-		while(tem) {
-			t++;
-			tem /= 10;
+		char arr[] = "0123456789";
+		while(u) {
+			print_buf[t++] = arr[u % 10];
+			u /= 10;
+		}
+		for (int ls = 0, rs = t - 1; ls <= rs; ++ls, --rs) {
+			char tem = print_buf[ls];
+			print_buf[ls] = print_buf[rs];
+			print_buf[rs] = tem;
 		}
 		print_buf[t] = '\0';
-		while(u) {
-			print_buf[--t] = u % 10 + '0';
-			u /= 10; 
-		}
 	}
 	if(base == 8) {
 		char arr[] = "012345678";
@@ -140,7 +141,7 @@ static int printk_write_num(char **out, long long i, int base, int sign,
 			print_buf[t++] = arr[u % 8];
 			u /= 8;
 		}
-		for (int ls = 0, rs = t-1; ls <= rs; ++ls, --rs) {
+		for (int ls = 0, rs = t - 1; ls <= rs; ++ls, --rs) {
 			char tem = print_buf[ls];
 			print_buf[ls] = print_buf[rs];
 			print_buf[rs] = tem;
@@ -161,7 +162,7 @@ static int printk_write_num(char **out, long long i, int base, int sign,
 				u /= 16;
 			}
 
-		for (int ls = 0, rs = t-1; ls <= rs; ++ls, --rs) {
+		for (int ls = 0, rs = t - 1; ls <= rs; ++ls, --rs) {
 			char tem = print_buf[ls];
 			print_buf[ls] = print_buf[rs];
 			print_buf[rs] = tem;
