@@ -13,6 +13,18 @@ u64 syscall(u64 sys_no, u64 arg0, u64 arg1, u64 arg2, u64 arg3, u64 arg4,
 	 * And finally use svc to execute the system call. After syscall returned, don't forget
 	 * to move return value from x0 to the ret variable of this function
 	 */
+	asm ("mov %%x0 %0" ::"r"(arg0));
+	asm ("mov %%x1 %0" ::"r"(arg1));
+	asm ("mov %%x2 %0" ::"r"(arg2));
+	asm ("mov %%x3 %0" ::"r"(arg3));
+	asm ("mov %%x4 %0" ::"r"(arg4));
+	asm ("mov %%x5 %0" ::"r"(arg5));
+	asm ("mov %%x6 %0" ::"r"(arg6));
+	asm ("mov %%x7 %0" ::"r"(arg7));
+	asm ("mov %%x8 %0" ::"r"(sys_no));
+
+	asm ("svc 0x0");
+	asm ("mov %0 %%x0" :"=r"(ret));
 	return ret;
 }
 
@@ -22,10 +34,12 @@ u64 syscall(u64 sys_no, u64 arg0, u64 arg1, u64 arg2, u64 arg3, u64 arg4,
  */
 void usys_putc(char ch)
 {
+	return syscall(SYS_putc, (u64)ch, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 void usys_exit(int ret)
 {
+	return syscall(SYS_exit, (u64)ret, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 int usys_create_pmo(u64 size, u64 type)

@@ -29,6 +29,7 @@ void sys_putc(char ch)
 	 * Lab3: Your code here
 	 * Send ch to the screen in anyway as your like
 	 */
+	kinfo("%c", ch);
 }
 
 /*
