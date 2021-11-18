@@ -186,10 +186,10 @@ static u64 load_binary(struct process *process,
 			 * The physical address of a pmo can be get from pmo->start.
 			 */
 			u64 start_offset = p_vaddr - start_page;
-			u64 *start_pmo = phys_to_virt(pmo->start) + start_offset;
+			u64 *start_pmo = (u64)phys_to_virt(pmo->start) + start_offset;
 			u64 *start_addr = bin + elf->p_headers[i].p_offset;
 			for(u64 idx = 0; idx < elf->p_headers[i].p_filesz; idx++) 
-				start_pmo[idx] = start_pmo[idx];
+				start_pmo[idx] = start_addr[idx];
 
 			flags = PFLAGS2VMRFLAGS(elf->p_headers[i].p_flags);
 
