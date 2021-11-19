@@ -350,11 +350,13 @@ u64 sys_handle_brk(u64 addr)
 	if(addr == 0) {
 		pmo = obj_alloc(TYPE_PMO, sizeof(*pmo));
 		pmo_init(pmo, PMO_ANONYM, 0, 0);
-		vmr = init_heap_vmr(vmspace, (vaddr_t)addr, pmo);
-		retval = addr;
-	} else if (addr > vmspace->heap_vmr->start < addr) {
-		vmspace->heap_vmr->size = addr - (u64)vmspace->heap_vmr->start;
-		vmspace->heap_vmr->pmo->size = addr - (u64)vmspace->heap_vmr->start;
+		int pmo_cap = cap_alloc(current_process, pmo, 0);
+		vmr = init_heap_vmr(vmspace, vmspace->user_current_heap, pmo);
+		vmspace->heap_vmr = vmr;
+		retval = vmspace->user_current_heap;
+	} else if (addr > vmspace->user_current_heap+vmspace->heap_vmr->size) {
+		vmspace->heap_vmr->size = addr - vmspace->user_current_heap;
+		vmspace->heap_vmr->pmo->size = addr - vmspace->user_current_heap;
 		retval = addr;
 	} else 
 		retval = -EINVAL;
