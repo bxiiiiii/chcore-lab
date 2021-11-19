@@ -106,7 +106,7 @@ static int get_next_ptp(ptp_t * cur_ptp, u32 level, vaddr_t va,
 	case 3:
 		index = GET_L3_INDEX(va);
 		break;
-	default:
+	default: 
 		BUG_ON(1);
 	}
 
@@ -162,7 +162,26 @@ static int get_next_ptp(ptp_t * cur_ptp, u32 level, vaddr_t va,
 int query_in_pgtbl(vaddr_t * pgtbl, vaddr_t va, paddr_t * pa, pte_t ** entry)
 {
 	// <lab2>
+	int re;
+	int level = 0;
+	pte_t *pte = NULL;
+	ptp_t *next_ptp = NULL;
+	ptp_t *cur_ptp = (ptp_t *)pgtbl;
 
+	while(level < 4) {
+		re = get_next_ptp(cur_ptp, level, va, &next_ptp, &pte, false);
+		if(re != NORMAL_PTP)
+			break;
+
+		cur_ptp = next_ptp;
+		++level;
+	}
+
+	if(re == NORMAL_PTP && level == 4) {
+		*pa = virt_to_phys((vaddr_t)next_ptp) + GET_VA_OFFSET_L3(va);
+		entry = &pte;
+	} else 
+		return re;
 	// </lab2>
 	return 0;
 }
@@ -186,11 +205,38 @@ int map_range_in_pgtbl(vaddr_t * pgtbl, vaddr_t va, paddr_t pa,
 		       size_t len, vmr_prop_t flags)
 {
 	// <lab2>
+	for(vaddr_t i = va; i < va + len; i += PAGE_SIZE, pa += PAGE_SIZE) {
+		int re;
+		int level = 0;
+		pte_t *pte = NULL;
+		ptp_t *next_ptp = NULL;
+		ptp_t *cur_ptp = (ptp_t *)pgtbl;
 
+		while(level < 3) {
+			re = get_next_ptp(cur_ptp, level, i, &next_ptp, &pte, true);
+			if(re != NORMAL_PTP)
+				break;
+				
+			cur_ptp = next_ptp;
+			++level;
+		}
+
+		if(level == 3) {
+			u32 index = GET_L3_INDEX(i);
+			pte = &(cur_ptp->ent[index]);
+			pte->l3_page.is_valid = 1;
+			pte->l3_page.is_page = 1;
+			pte->l3_page.pfn = pa >> PAGE_SHIFT;
+			set_pte_flags(pte, flags, KERNEL_PTE);
+		} else 
+			return re;
+	}
+
+	flush_tlb();
 	// </lab2>
 	return 0;
+	
 }
-
 
 /*
  * unmap_range_in_pgtble: unmap the virtual address [va:va+len]
@@ -207,8 +253,33 @@ int map_range_in_pgtbl(vaddr_t * pgtbl, vaddr_t va, paddr_t pa,
 int unmap_range_in_pgtbl(vaddr_t * pgtbl, vaddr_t va, size_t len)
 {
 	// <lab2>
+	for(vaddr_t i = va; i < va + len; i += PAGE_SIZE) {
+		int re;
+		int level = 0;
+		pte_t *pte = NULL;
+		ptp_t *next_ptp = NULL;
+		ptp_t *cur_ptp = (ptp_t *)pgtbl;
 
+		while(level < 3) {
+			re = get_next_ptp(cur_ptp, level, i, &next_ptp, &pte, true);
+			if(re != NORMAL_PTP)
+				break;
+				
+			cur_ptp = next_ptp;
+			++level;
+		}
+
+		if(level == 3 && re == NORMAL_PTP && cur_ptp != NULL) {
+			u32 index = GET_L3_INDEX(i);
+			pte = &(cur_ptp->ent[index]);
+			pte->pte = 0;
+			pte->l3_page.is_valid = 0;
+		} else 
+			return re;
+	}
 	// </lab2>
+
+	flush_tlb();
 	return 0;
 }
 
