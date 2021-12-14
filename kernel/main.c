@@ -76,6 +76,7 @@ void main(void *addr)
 #endif
 
 	/* Other cores are busy looping on the addr, wake up those cores */
+	lock_kernel();
 	enable_smp_cores(addr);
 	kinfo("[ChCore] boot multicore finished\n");
 
@@ -113,6 +114,8 @@ void secondary_start(void)
 	 * Hints: use cpu_status
 	*/
 
+	cpu_status[smp_get_cpu_id()] = cpu_run;
+
 #ifndef TEST
 	run_test(false);
 #endif
@@ -121,7 +124,7 @@ void secondary_start(void)
 	 *  Lab4
 	 *  Acquire the big kernel lock
 	 */
-
+	lock_kernel();
 	/* Where the AP first returns to the user mode */
 	sched();
 	eret_to_thread(switch_context());
