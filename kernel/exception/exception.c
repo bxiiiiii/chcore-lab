@@ -57,6 +57,8 @@ void handle_entry_c(int type, u64 esr, u64 address)
 	 */
 
 	/* ec: exception class */
+	if(type == HANDLE_USER)
+		lock_kernel();
 	u32 esr_ec = GET_ESR_EL1_EC(esr);
 
 	kdebug

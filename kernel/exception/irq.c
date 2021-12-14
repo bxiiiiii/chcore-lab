@@ -40,6 +40,8 @@ void handle_irq(int type)
 	 *	The irq is not from the kernel
 	 * 	The thread being interrupted is an idle thread.
 	 */
+	if(type == HANDLE_USER)
+		lock_kernel();
 
 	plat_handle_irq();
 
