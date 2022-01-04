@@ -51,12 +51,22 @@ struct thread idle_threads[PLAT_CPU_NUM];
  */
 int rr_sched_enqueue(struct thread *thread)
 {
-	if(thread->thread_ctx->state == TYPE_IDLE)
+	if(thread == NULL || thread->thread_ctx == NULL)
 		return -1;
-	else{
-		thread->thread_ctx->state = TS_READY;
-		list_append(thread, &rr_ready_queue[smp_get_cpu_id()]);
-	}
+	if(thread->thread_ctx->type == TYPE_IDLE)
+		return 0;
+	if(thread->thread_ctx->state == TS_READY)
+		return -1;
+
+	if(thread->thread_ctx->affinity == NO_AFF)
+		thread->thread_ctx->cpuid = smp_get_cpu_id();
+	else if(thread->thread_ctx->affinity < PLAT_CPU_NUM)
+		thread->thread_ctx->cpuid = thread->thread_ctx->affinity;
+	else
+		return -1;
+	thread->thread_ctx->state = TS_READY;
+	list_append(&thread->ready_queue_node, &rr_ready_queue[thread->thread_ctx->cpuid]);
+	
 	
 	return 0;
 }
@@ -69,12 +79,15 @@ int rr_sched_enqueue(struct thread *thread)
  */
 int rr_sched_dequeue(struct thread *thread)
 {
-	if(thread->thread_ctx->state == TYPE_IDLE)
+	if(thread == NULL 
+				|| thread->thread_ctx == NULL
+				|| list_empty(&thread->ready_queue_node)
+				|| thread->thread_ctx->type == TYPE_IDLE
+				|| thread->thread_ctx->state != TS_READY)
 		return -1;
-	else{
-		thread->thread_ctx->state = TS_INTER;
-		list_del(&thread->ready_queue_node);
-	}
+
+	thread->thread_ctx->state = TS_INTER;
+	list_del(&thread->ready_queue_node);
 
 	return 0;
 }
